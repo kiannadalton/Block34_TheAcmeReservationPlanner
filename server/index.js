@@ -57,10 +57,10 @@ server.delete('/api/customers/:customer_id/reservations/:id', async(req, res, ne
     }
 })
 
-server.post('/api/customers/:customer_id/reservations', async(req, res, next) => {
+server.post('/api/customers/:id/reservations', async(req, res, next) => {
     try {
-        const {customer_id} = req.params;
-        const reservation = await createReservation( { ...req.body, customer_id} );
+        const {id} = req.params;
+        const reservation = await createReservation( { ...req.body, id} );
         res.status(201).send(reservation);
     } catch (error) {
         next(error)
