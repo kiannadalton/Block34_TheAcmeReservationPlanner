@@ -9,17 +9,19 @@ const {client,
     fetchReservations    
     } = require("./db");
 
-const express = require('express')
+const express = require('express');
 
-server.use(express.json())
-
+// create express server
 const server = express();
+
+// middleware to use before all routes
+// helpful for POST
+server.use(express.json());
 
 // should return an array of customers
 server.get('/api/customers', async(req, res, next) => {
     try {
-        const response = await fetchCustomers();
-        res.send(response);
+        res.send(await fetchCustomers());
     } catch (error) {
         next(error)
     }
@@ -28,7 +30,6 @@ server.get('/api/customers', async(req, res, next) => {
 // should return an array of restaurants
 server.get('/api/restaurants', async(req, res, next) => {
     try {
-        // same thing as getcustomers but different format:
         res.send(await fetchRestaurants());
     } catch (error) {
         next(error)
@@ -58,8 +59,8 @@ server.delete('/api/customers/:customer_id/reservations/:id', async(req, res, ne
 
 server.post('/api/customers/:customer_id/reservations', async(req, res, next) => {
     try {
-        const {restaurant_id,date, party_count} = req.params;
-        const reservation = await createReservation( ...req.body, restaurant_id, date, party_count )
+        const {customer_id} = req.params;
+        const reservation = await createReservation( { ...req.body, customer_id} );
         res.status(201).send(reservation);
     } catch (error) {
         next(error)
@@ -72,7 +73,9 @@ server.use((err, req, res) => {
 })
 
 const init = async () => {
+    console.log("connecting to database");
     await client.connect();
+    console.log("connected to database");
 
     await createTables();
     console.log("table created");
@@ -87,35 +90,42 @@ const init = async () => {
         createRestaurant({name: "BobEvans"}),
     ]);
 
+    console.log('tables seeded');
+    console.log("Joe:", joe)
+    console.log("McDonalds:", mcdonalds)
+
     const customers = await fetchCustomers();
+    console.log('customers', customers);
 
     const restaurants = await fetchRestaurants();
+    console.log('restaurants', restaurants);
 
     const [reserv1, reserv2] = await Promise.all([
         createReservation({
             date: '10/10/2024',
             party_count: 2,
-            restaurant_id: McDonalds.id,
+            restaurant_id: mcdonalds.id,
             customer_id: joe.id
             }),
             
         createReservation({
             date: '11/12/2024',
             party_count: 5,
-            restaurant_id: DairyQueen.id,
+            restaurant_id: dairyqueen.id,
             customer_id: ryan.id
         }),
     ])
 
-    await destroyReservation({ id: reserv1.id, customer_id: joe.id});
+    // await destroyReservation({ id: reserv1.id, customer_id: joe.id});
+
+    // only had one because we deleted the other with the above function
     const reserv = await fetchReservations();
+    console.log('Reserv:', reserv);
 
-
+    const PORT = process.env.PORT || 3000;
+    server.listen(PORT, ()=>{
+        console.log(`Server listening on ${PORT}`);
+    });
 }
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, ()=>{
-    console.log(`Server listening on ${PORT}`);
-})
 
 init ();
